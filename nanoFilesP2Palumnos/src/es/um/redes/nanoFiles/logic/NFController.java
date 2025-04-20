@@ -73,14 +73,43 @@ public class NFController {
 	 * principalmente de invocar los métodos adecuados de NFControllerLogicDir y
 	 * NFControllerLogicP2P según el comando.
 	 */
+	
+	
 	public void testCommunication() {
 		assert (NanoFiles.testModeUDP);
 		System.out
-				.println("[testMode] Attempting to reach directory server at " + controllerDir.getDirectoryHostname());
+			.println("[testMode] Attempting to reach directory server at " + controllerDir.getDirectoryHostname());
 		controllerDir.testCommunicationWithDirectory();
 		System.out.println("[testMode] Test terminated!");
 		return;
 	}
+/*
+	public void testCommunication() {
+		if (NanoFiles.testModeUDP) {
+			System.out.println("[testMode] Attempting to reach directory server at " + controllerDir.getDirectoryHostname());
+			controllerDir.testCommunicationWithDirectory();
+			System.out.println("[testMode] UDP test completed.");
+		} else if (NanoFiles.testModeTCP) {
+			System.out.println("[testMode] Launching TCP test...");
+
+			// Arranca el servidor
+			controllerPeer.testTCPServer();  // esto inicia el servidor (NFServer)
+
+			// Esperamos un poco para dar tiempo al servidor a arrancar (opcional)
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+
+			// Lanza el cliente que conecta al servidor
+			controllerPeer.testTCPClient();
+
+			System.out.println("[testMode] TCP test completed.");
+		}
+	}
+*/
+
 
 	/**
 	 * Método que procesa los comandos introducidos por un usuario. Se encarga

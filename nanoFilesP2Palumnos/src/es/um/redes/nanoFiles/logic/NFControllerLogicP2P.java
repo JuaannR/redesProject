@@ -1,8 +1,13 @@
 package es.um.redes.nanoFiles.logic;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
+import java.io.File;
 import java.io.IOException;
 import es.um.redes.nanoFiles.tcp.client.NFConnector;
+import es.um.redes.nanoFiles.tcp.message.PeerMessage;
+import es.um.redes.nanoFiles.tcp.message.PeerMessageOps;
 import es.um.redes.nanoFiles.application.NanoFiles;
 
 
@@ -52,17 +57,22 @@ public class NFControllerLogicP2P {
 			 * 
 			 */
 			
-			/////////////////////////////////////////////////
+			//Arrancamos servidor TCP en segundo plano, en otro hilo, para que el hilo
+			//principal pueda seguir aceptando comandos en el shell
+			
 			try {
-				System.out.println("🟢 Iniciando servidor de ficheros...");
-				fileServer = new NFServer();  // Instancia el servidor
+				System.out.println("Iniciando servidor de ficheros...");
+				fileServer = new NFServer();  // Instancia el servidor (NFerver)
 
-				int port = fileServer.getListeningPort();
+				int port = fileServer.getListeningPort(); // 10000
 				if (port > 0) {
+					//Creamos un hilo (Thread) que ejecuta el metodo run() de NFServer
+					// El run() contiene un accept() dentro de un bucle para que el 
+					//servidor quede escuchando conexiones
 					Thread serverThread = new Thread(() -> {
 						fileServer.run();  // Corre el servidor en segundo plano
 					});
-					serverThread.start();
+					serverThread.start();  //lanzar hilo en 2º plano
 					System.out.println("Servidor de ficheros en marcha en el puerto TCP " + port);
 					serverRunning = true;
 				} else {
@@ -72,7 +82,7 @@ public class NFControllerLogicP2P {
 				System.err.println("No se pudo iniciar el servidor de ficheros: " + e.getMessage());
 				fileServer = null;
 			}
-			//////////////////////////////////////////777777
+
 
 		}
 		return serverRunning;
@@ -122,7 +132,7 @@ public class NFControllerLogicP2P {
 			NFConnector nfConnector = new NFConnector(new InetSocketAddress(NFServer.PORT));
 			nfConnector.test();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			//  Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -136,14 +146,37 @@ public class NFControllerLogicP2P {
 	 * @param localFileName           Nombre con el que se guardará el fichero
 	 *                                descargado
 	 */
+	
+	
+	
+	
 	protected boolean downloadFileFromServers(InetSocketAddress[] serverAddressList, String targetFileNameSubstring,
 			String localFileName) {
 		boolean downloaded = false;
-
+		
+		// lista de peers vacios, nadie tiene el fichero buscado
 		if (serverAddressList.length == 0) {
 			System.err.println("* Cannot start download - No list of server addresses provided");
 			return false;
 		}
+		
+		// fichero buscado ya existe. Evitamos sobreescribir el archivo
+		File localFile = new File(NanoFiles.sharedDirname + File.separator + localFileName); //ruta al fichero
+		if (localFile.exists()) {
+			System.err.println("File already exists locally: " + localFileName);
+			return false;
+		}
+		
+		int ChunkNumber = 0;  //emepzamos desde el chunk 0 (principio fichero)
+		boolean moreChunks = true;
+		
+		Map<InetSocketAddress, Integer> chunkPorServidor = new HashMap<>();
+		
+
+		
+		
+		
+		
 		/*
 		 * TODO: Crear un objeto NFConnector distinto para establecer una conexión TCP
 		 * con cada servidor de ficheros proporcionado, y usar dicho objeto para

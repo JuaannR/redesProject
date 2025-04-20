@@ -14,24 +14,24 @@ import es.um.redes.nanoFiles.util.FileInfo;
 
 public class PeerMessage {
 
-
-	/*
-	 * TODO: (Boletín MensajesBinarios) Añadir atributos u otros constructores
-	 * específicos para crear mensajes con otros campos, según sea necesario
-	 * 
-	 */
-	
 	
 	private byte opcode;	
 	
 	// get_chunk y send_chunk
-	private String fileName;
+	private String fileName;  
 	private int chunkNumber;
+	
+	//solo get_chunk
+	private int chunkSize;
 	
 	// solo send_chuck
 	private byte[] chunkData;
 	
 	//file_not_found solo necesita opcode
+	
+	// file info request / response
+	private long fileSize;
+	private String fileHash;
 
 	public PeerMessage() {
 		opcode = PeerMessageOps.OPCODE_INVALID_CODE;
@@ -41,12 +41,6 @@ public class PeerMessage {
 		opcode = op;
 	}
 
-	/*
-	 * TODO: (Boletín MensajesBinarios) Crear métodos getter y setter para obtener
-	 * los valores de los atributos de un mensaje. Se aconseja incluir código que
-	 * compruebe que no se modifica/obtiene el valor de un campo (atributo) que no
-	 * esté definido para el tipo de mensaje dado por "operation".
-	 */
 	
 	//getters/setters 
 	public byte getOpcode() {
@@ -58,7 +52,7 @@ public class PeerMessage {
 	}
 	
 	public void setFileName(String nombre) {
-		if (opcode != PeerMessageOps.GET_CHUNK && opcode != PeerMessageOps.SEND_CHUNK) {
+		if (opcode != PeerMessageOps.GET_CHUNK && opcode != PeerMessageOps.SEND_CHUNK && opcode != PeerMessageOps.FILE_INFO_REQUEST && opcode != PeerMessageOps.FILE_INFO_RESPONSE) {
 			throw new RuntimeException("Filename is not valid for this message type");
 		}
 		fileName = nombre;
@@ -75,6 +69,17 @@ public class PeerMessage {
 		chunkNumber = numero;
 	}
 	
+	public int getChunkSize() {
+		return chunkSize;
+	}
+	
+	public void setChunkSize(int size) {
+		if (opcode != PeerMessageOps.GET_CHUNK) {
+	        throw new RuntimeException("ChunkSize is not valid for this message type");
+		}
+		chunkSize = size;
+	}
+	
 	public byte[] getChunkData() {
 		return chunkData;
 	}
@@ -85,25 +90,31 @@ public class PeerMessage {
 		}
 		chunkData = data;
 	}
+	
+	public long getFileSize() {
+		return fileSize;
+	}
+	
+	public void setFileSize(long tam) {
+		if (opcode != PeerMessageOps.FILE_INFO_REQUEST && opcode != PeerMessageOps.FILE_INFO_RESPONSE) {
+			throw new RuntimeException("fileSize not valid for this opetation");
+		}
+		fileSize = tam;
+	}
+	
+	public String getFileHash() {
+		return fileHash;
+	}
+	
+	public void setFileHash(String hash) {
+		if (opcode != PeerMessageOps.FILE_INFO_REQUEST && opcode != PeerMessageOps.FILE_INFO_RESPONSE) {
+			throw new RuntimeException("fileHash not valid for this opetation");
+	}
+		fileHash = hash;
+}
 
-	/**
-	 * Método de clase para parsear los campos de un mensaje y construir el objeto
-	 * DirMessage que contiene los datos del mensaje recibido
-	 * 
-	 * @param data El array de bytes recibido
-	 * @return Un objeto de esta clase cuyos atributos contienen los datos del
-	 *         mensaje recibido.
-	 * @throws IOException
-	 */
 	public static PeerMessage readMessageFromInputStream(DataInputStream dis) throws IOException {
-		/*
-		 * TODO: (Boletín MensajesBinarios) En función del tipo de mensaje, leer del
-		 * socket a través del "dis" el resto de campos para ir extrayendo con los
-		 * valores y establecer los atributos del un objeto DirMessage que contendrá
-		 * toda la información del mensaje, y que será devuelto como resultado. NOTA:
-		 * Usar dis.readFully para leer un array de bytes, dis.readInt para leer un
-		 * entero, etc.
-		 */
+
 		
 		// Lee mensaje binario recibido por socket TCP
 		// Interpreta el contenido leido del mensaje  según el opcode 
@@ -129,9 +140,13 @@ public class PeerMessage {
 			//Leer numero de chunk solicitado
 			int chunkNum = dis.readInt();
 			
+			//Leer tamaño del chunk solicitado
+			int chunkSize = dis.readInt();
+			
 			//Metemos los datos en el PeerMessage 
 			message.setFileName(fileName);
 			message.setChunkNumber(chunkNum);
+			message.setChunkSize(chunkSize);
 			break;
 		}
 		
@@ -157,6 +172,48 @@ public class PeerMessage {
 			message.setChunkData(data);
 			break;
 		}
+		
+		case PeerMessageOps.FILE_NOT_FOUND: {
+			//No hay que hacer nada, solo necesitamos opcode que esta fuera del switch
+			break;
+		}
+		
+		case PeerMessageOps.FILE_INFO_REQUEST: {
+			// leer longitud del nombre del fichero y reservar array con su longitus
+			int fileNameLength = dis.readInt();
+			byte[] fileNameBytes = new byte[fileNameLength];
+			
+			//se leen todos los bytes del nombre del fichero y se convierten a string
+			dis.readFully(fileNameBytes);
+			String fileName = new String(fileNameBytes);
+			
+			//Se mete al PeerMessage
+			message.setFileName(fileName);
+			break;
+		}
+		
+		case PeerMessageOps.FILE_INFO_RESPONSE: {
+			// leer longitud del nombre del fichero y reservar array con su longitus
+			int fileNameLength = dis.readInt();
+			byte[] fileNameBytes = new byte[fileNameLength];
+			
+			//se leen todos los bytes del nombre del fichero y se convierten a string
+			dis.readFully(fileNameBytes);
+			String fileName = new String(fileNameBytes);
+			
+			long fileSize = dis.readLong();  // leer tamFichero
+			int hashLenght = dis.readInt();  //leer Longitud hash del fichero
+			byte[] hashBytes = new byte[hashLenght];
+			dis.readFully(hashBytes);  //leemos los bytes
+			String fileHash = new String(hashBytes);  //y pasamos a string
+			
+			//Se mete al PeerMessage
+			message.setFileName(fileName);
+			message.setFileSize(fileSize);
+			message.setFileHash(fileHash);
+			break;
+		}
+		
 
 
 
@@ -169,13 +226,7 @@ public class PeerMessage {
 	}
 
 	public void writeMessageToOutputStream(DataOutputStream dos) throws IOException {
-		/*
-		 * TODO (Boletín MensajesBinarios): Escribir los bytes en los que se codifica el
-		 * mensaje en el socket a través del "dos", teniendo en cuenta opcode del
-		 * mensaje del que se trata y los campos relevantes en cada caso. NOTA: Usar
-		 * dos.write para leer un array de bytes, dos.writeInt para escribir un entero,
-		 * etc.
-		 */
+
 		
 		// Codifica y envia mensaje binario a través de socket TCP
 		// Convierte un objeto PeerMessage en secuencia de bytes según su opcode 
@@ -189,20 +240,47 @@ public class PeerMessage {
 		case PeerMessageOps.GET_CHUNK: {
 			//se codifica nombre del fichero a bytes
 			byte[] fileNameBytes = fileName.getBytes();
-			dos.writeInt(fileNameBytes.length);  //longitud nombre
+			dos.writeInt(fileNameBytes.length);  //longitud nombre en bytes
 			dos.write(fileNameBytes);  //bytes del nombre
 			dos.writeInt(chunkNumber);  //byte del chunk
+			dos.writeInt(chunkSize);   //bytes tamaño chunk
 			break;
 		}
 		
 		case PeerMessageOps.SEND_CHUNK: {
 			//se codifica nombre del fichero a bytes
 			byte[] fileNameBytes = fileName.getBytes();
-			dos.writeInt(fileNameBytes.length); //longitud nombre
-			dos.write(fileNameBytes);	//bytes nombre
+			dos.writeInt(fileNameBytes.length); //longitud nombre fichero en bytes
+			dos.write(fileNameBytes);	//bytes nombre fichero
 			dos.writeInt(chunkNumber);	//bytes chunk
-			dos.writeInt(chunkData.length);  //longitud datos
+			dos.writeInt(chunkData.length);  //longitud datos en bytes
 			dos.write(chunkData);	//bytes datos
+			break;
+		}
+		
+		case PeerMessageOps.FILE_NOT_FOUND: {
+			//No hay que hacer nada, solo necesitamos opcode que esta fuera del switch
+			break;
+		}
+		
+		case PeerMessageOps.FILE_INFO_REQUEST: {
+			// codificamos nombre del fichero a bytes
+			byte[] fileNameBytes = fileName.getBytes();
+			dos.writeInt(fileNameBytes.length); //longitud nombre fichero en bytes
+			dos.write(fileNameBytes);	//bytes nombre fichero
+			break;
+		}
+		
+		case PeerMessageOps.FILE_INFO_RESPONSE: {
+			//coodificar nombre fichero y su hash a bytes
+			byte[] fileNameBytes = fileName.getBytes();
+			byte[] hashBytes = fileHash.getBytes();
+			
+			dos.writeInt(fileNameBytes.length);  //longitud nombre fichero en bytes
+			dos.write(fileNameBytes);		// bytes nombre fichero
+			dos.writeLong(fileSize);		//bytes tamaño fichero
+			dos.writeInt(hashBytes.length); //longitud hash fichero en bytes
+			dos.write(hashBytes);			//bytes hash fichero
 			break;
 		}
 
@@ -222,7 +300,7 @@ El peer A manda un get_chunk a un peer B, entonces tiene que
 usar la función write en el caso de get_chunk.
 El peer B lo recibe, entonces para entenderlo, debe usar la 
 función read en el caso de get_chunk, y crea un mensaje send_chunk, 
-para la cual debe usar la función write.
-El peer A recibe este send_chunk, por lo que debe usar el método read para entenderlo
-
+para la cual debe usar la función write para enviarlo
+El peer A recibe este send_chunk, por lo que debe usar el método read para 
+decodificarlo y entenderlo
 */

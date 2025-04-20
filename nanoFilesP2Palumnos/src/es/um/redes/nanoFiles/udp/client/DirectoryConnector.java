@@ -356,7 +356,7 @@ public class DirectoryConnector {
 		DirMessage request = new DirMessage(DirMessageOps.OPERATION_DOWNLOAD);
 		request.setFileNameSubstring(filenameSubstring);
 
-		//Se pasa a bytes y se envia
+		//Se pasa a String y a bytes y se envia
 		String requestString = request.toString();
 		byte[] requestBytes = requestString.getBytes();
 		System.out.println("CLIENTE: Enviando mensaje DOWNLOAD:\n" + requestString);
@@ -370,6 +370,7 @@ public class DirectoryConnector {
 		}
 
 		//Se procesa la respuesta
+		//Pasamos de bytes a String y de String a DirMessage
 		String responseString = new String(responseBytes);
 		DirMessage response = DirMessage.fromString(responseString);
 		System.out.println("CLIENTE: Recibida respuesta:\n" + responseString);
