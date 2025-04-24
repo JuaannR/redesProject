@@ -2,17 +2,13 @@ package es.um.redes.nanoFiles.tcp.client;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-
 import es.um.redes.nanoFiles.tcp.message.PeerMessage;
 import es.um.redes.nanoFiles.tcp.message.PeerMessageOps;
-import es.um.redes.nanoFiles.util.FileDigest;
+
 
 //Esta clase proporciona la funcionalidad necesaria para intercambiar mensajes entre el cliente y el servidor
 public class NFConnector {
@@ -94,6 +90,11 @@ public class NFConnector {
 			return null;
 		}
 	}
+	
+	
+	
+	
+	
 	
 	// Método para cerrar conexiones
 	public void close() {

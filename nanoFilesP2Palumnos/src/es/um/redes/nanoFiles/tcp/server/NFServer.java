@@ -160,6 +160,16 @@ public class NFServer implements Runnable {
 	 * @see java.lang.Runnable#run()
 	 */
 	
+	
+	
+	/**
+	 * Método run del hilo principal del servidor.
+	 * Este método queda a la escucha de conexiones entrantes.
+	 * 
+	 * Por cada conexión aceptada (con accept()), se lanza un nuevo hilo (NFServerThread)
+	 * que se encarga de gestionar la comunicación con ese cliente de forma independiente.
+	 */
+
 	@Override
 	public void run() {
 		System.out.println("[NFServer] run(), esperando conexiones");
@@ -171,7 +181,7 @@ public class NFServer implements Runnable {
             System.out.println("[NFServer] Cliente conectado desde " + cliente.getInetAddress());
             
             //Crear hilo para manejar al cliente conectado
-            Thread t = new Thread(() -> serveFilesToClient(cliente));
+            NFServerThread t = new NFServerThread(cliente);
             t.start();
             
 			} catch (IOException e) {
@@ -179,66 +189,14 @@ public class NFServer implements Runnable {
 			}
 			
 		}
-		/*
-		 * TODO: (Boletín SocketsTCP) Usar el socket servidor para esperar conexiones de
-		 * otros peers que soliciten descargar ficheros
-		 */
-		/*
-		 * TODO: (Boletín SocketsTCP) Al establecerse la conexión con un peer, la
-		 * comunicación con dicho cliente se hace en el método
-		 * serveFilesToClient(socket), al cual hay que pasarle el socket devuelto por
-		 * accept
-		 */
-		/*
-		 * TODO: (Boletín TCPConcurrente) Crear un hilo nuevo de la clase
-		 * NFServerThread, que llevará a cabo la comunicación con el cliente que se
-		 * acaba de conectar, mientras este hilo vuelve a quedar a la escucha de
-		 * conexiones de nuevos clientes (para soportar múltiples clientes). Si este
-		 * hilo es el que se encarga de atender al cliente conectado, no podremos tener
-		 * más de un cliente conectado a este servidor.
-		 */
-
 
 
 
 	}
-	/*
-	 * TODO: (Boletín SocketsTCP) Añadir métodos a esta clase para: 1) Arrancar el
-	 * servidor en un hilo nuevo que se ejecutará en segundo plano 2) Detener el
-	 * servidor (stopserver) 3) Obtener el puerto de escucha del servidor etc.
-	 */
 
 
-
-
-	/**
-	 * Método de clase que implementa el extremo del servidor del protocolo de
-	 * transferencia de ficheros entre pares.
-	 * 
-	 * @param socket El socket para la comunicación con un cliente que desea
-	 *               descargar ficheros.
-	 */
-	
 	public static void serveFilesToClient(Socket socket) {
-		/*
-		 * TODO: (Boletín SocketsTCP) Crear dis/dos a partir del socket
-		 */
-		/*
-		 * TODO: (Boletín SocketsTCP) Mientras el cliente esté conectado, leer mensajes
-		 * de socket, convertirlo a un objeto PeerMessage y luego actuar en función del
-		 * tipo de mensaje recibido, enviando los correspondientes mensajes de
-		 * respuesta.
-		 */
-		/*
-		 * TODO: (Boletín SocketsTCP) Para servir un fichero, hay que localizarlo a
-		 * partir de su hash (o subcadena) en nuestra base de datos de ficheros
-		 * compartidos. Los ficheros compartidos se pueden obtener con
-		 * NanoFiles.db.getFiles(). Los métodos lookupHashSubstring y
-		 * lookupFilenameSubstring de la clase FileInfo son útiles para buscar ficheros
-		 * coincidentes con una subcadena dada del hash o del nombre del fichero. El
-		 * método lookupFilePath() de FileDatabase devuelve la ruta al fichero a partir
-		 * de su hash completo.
-		 */
+
 		try {
 			System.out.println("[NFServer] Cliente conectado desde " + socket.getInetAddress());
 			
@@ -252,19 +210,6 @@ public class NFServer implements Runnable {
 				PeerMessage request = PeerMessage.readMessageFromInputStream(dis);
 				byte opcode = request.getOpcode();
 				
-				//procesar mensaje recibido, solo deberia ser GET_CHUNK
-				//if(opcode != PeerMessageOps.GET_CHUNK) {
-				//	System.err.println("[NFServer] Opcode no soportado: " + request.getOpcode());
-				//	break;
-				//}
-				
-				if(opcode == PeerMessageOps.GET_CHUNK) {
-				
-				System.out.println("[NFServer] Petición GET_CHUNK recibida:");
-				System.out.println(" - Fichero: " + request.getFileName());
-				System.out.println(" - Chunk #: " + request.getChunkNumber());
-				System.out.println(" - Chunk Size: " + request.getChunkSize());
-				}
 				// Buscamos el 1º fichero de la lista que coincida con la subcadena
 				// Busqueda insensible a mayúsculas/minúsculas con toLowerCase()
 				
@@ -286,6 +231,30 @@ public class NFServer implements Runnable {
 					break;
 				}
 				
+				
+				if (opcode == PeerMessageOps.FILE_INFO_REQUEST) {
+					System.out.println("[NFServer] Petición FILE_INFO_REQUEST recibida:");
+					System.out.println("[NFServer] Nombre archivo: " + encontrado.getFileName());
+					System.out.println("[NFServer] El archivo ocupa " + encontrado.getFileSize() + " bytes");
+					
+					PeerMessage response = new PeerMessage(PeerMessageOps.FILE_INFO_RESPONSE);
+					response.setFileName(encontrado.getFileName());
+					response.setFileHash(encontrado.getFileHash());
+					response.setFileSize(encontrado.getFileSize());
+					
+					response.writeMessageToOutputStream(dos);
+					dos.flush();
+					break;
+				}
+				
+				if(opcode == PeerMessageOps.GET_CHUNK) {
+				
+				System.out.println("[NFServer] Petición GET_CHUNK recibida:");
+				System.out.println(" - Fichero: " + request.getFileName());
+				System.out.println(" - Chunk #: " + request.getChunkNumber());
+				System.out.println(" - Chunk Size: " + request.getChunkSize());
+				
+
 				
 				// Calcular que data hay que leer (desde donde empezamos y acabamos)
 				int chunkNumber = request.getChunkNumber();
@@ -318,7 +287,7 @@ public class NFServer implements Runnable {
 				
 				//Crear y enviar respuesta
 				PeerMessage response = new PeerMessage(PeerMessageOps.SEND_CHUNK);
-				response.setFileName(encontrado.fileName);
+				response.setFileName(encontrado.getFileName());
 				response.setChunkNumber(chunkNumber);
 				response.setChunkData(chunkData);
 				
@@ -326,7 +295,8 @@ public class NFServer implements Runnable {
 				dos.flush();
 				
 				System.out.println("[NFServer] Chunk enviado correctamente (" + bytesToRead + " bytes)");
-				
+				break;
+				}
 				
 				}
 				
@@ -352,122 +322,3 @@ public class NFServer implements Runnable {
 
 }
 
-
-/*
-
-public static void serveFilesToClient(Socket socket) {
-    try {
-        System.out.println("[NFServer] Cliente conectado desde " + socket.getInetAddress());
-		
-		//Flujos de entrada y salida TCP
-        DataInputStream dis = new DataInputStream(socket.getInputStream());
-        DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-	
-		// Mientras el cliente este conectado
-        while (true) {
-        	// leer mensaje entrante
-            PeerMessage request = PeerMessage.readMessageFromInputStream(dis);
-            byte opcode = request.getOpcode();
-		
-			//procesar mensaje recibido
-			
-            if (opcode == PeerMessageOps.FILE_INFO_REQUEST) {
-                System.out.println("[NFServer] FILE_INFO_REQUEST recibido para: " + request.getFileName());
-
-                FileInfo[] files = NanoFiles.db.getFiles();
-                FileInfo match = null;
-                for (FileInfo f : files) {
-                    if (f.getFileName().toLowerCase().contains(request.getFileName().toLowerCase())) {
-                        match = f;
-                        break;
-                    }
-                }
-
-                PeerMessage response;
-                if (match != null) {
-                    response = new PeerMessage(PeerMessageOps.FILE_INFO_RESPONSE);
-                    response.setFileName(match.fileName);
-                    response.setFileSize(match.fileSize);
-                    response.setFileHash(match.fileHash);
-                    System.out.println("[NFServer] Enviando FILE_INFO_RESPONSE");
-                } else {
-                    response = new PeerMessage(PeerMessageOps.FILE_NOT_FOUND);
-                    System.out.println("[NFServer] Archivo no encontrado, enviando FILE_NOT_FOUND");
-                }
-
-                response.writeMessageToOutputStream(dos);
-                dos.flush();
-                break;
-
-            } else if (opcode == PeerMessageOps.GET_CHUNK) {
-                System.out.println("[NFServer] GET_CHUNK recibido para: " + request.getFileName());
-
-                FileInfo[] files = NanoFiles.db.getFiles();
-                FileInfo match = null;
-                for (FileInfo f : files) {
-                    if (f.getFileName().toLowerCase().contains(request.getFileName().toLowerCase())) {
-                        match = f;
-                        break;
-                    }
-                }
-
-                if (match == null) {
-                    PeerMessage notFound = new PeerMessage(PeerMessageOps.FILE_NOT_FOUND);
-                    notFound.writeMessageToOutputStream(dos);
-                    dos.flush();
-                    System.out.println("[NFServer] Archivo no encontrado para GET_CHUNK");
-                    break;
-                }
-
-                File file = new File(match.getFilePath());
-                try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
-                    int chunkNumber = request.getChunkNumber();
-                    int chunkSize = request.getChunkSize();
-                    long offset = (long) chunkNumber * chunkSize;
-
-                    if (offset >= raf.length()) {
-                        PeerMessage notFound = new PeerMessage(PeerMessageOps.FILE_NOT_FOUND);
-                        notFound.writeMessageToOutputStream(dos);
-                        dos.flush();
-                        System.out.println("[NFServer] Chunk fuera de rango");
-                        break;
-                    }
-
-                    int bytesToRead = (int) Math.min(chunkSize, raf.length() - offset);
-                    byte[] chunkData = new byte[bytesToRead];
-                    raf.seek(offset);
-                    raf.readFully(chunkData);
-
-                    PeerMessage response = new PeerMessage(PeerMessageOps.SEND_CHUNK);
-                    response.setFileName(match.fileName);
-                    response.setChunkNumber(chunkNumber);
-                    response.setChunkData(chunkData);
-
-                    response.writeMessageToOutputStream(dos);
-                    dos.flush();
-
-                    System.out.println("[NFServer] Chunk #" + chunkNumber + " enviado correctamente (" + bytesToRead + " bytes)");
-
-                }
-                break;
-
-            } else {
-                System.err.println("[NFServer] Opcode no soportado: " + opcode);
-                break;
-            }
-        }
-
-    } catch (IOException e) {
-        System.err.println("[NFServer] Error en la conexión: " + e.getMessage());
-    } finally {
-        try {
-            socket.close();
-            System.out.println("[NFServer] Conexión cerrada");
-        } catch (IOException e) {
-            System.err.println("[NFServer] Error cerrando el socket");
-        }
-    }
-}
-
-
-*/
