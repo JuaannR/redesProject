@@ -234,6 +234,8 @@ public class PeerMessageTest {
 		
 		//Leemos y reconstruimos el mensaje, decodificamos
 		PeerMessage msgInfoReqLeido = PeerMessage.readMessageFromInputStream(dis4);
+		
+		//cerar stream
 		dis4.close();
 
 		// ======== //

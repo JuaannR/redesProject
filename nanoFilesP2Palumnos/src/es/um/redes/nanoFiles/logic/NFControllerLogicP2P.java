@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+
 import es.um.redes.nanoFiles.tcp.client.NFConnector;
 import es.um.redes.nanoFiles.tcp.message.PeerMessage;
 import es.um.redes.nanoFiles.tcp.message.PeerMessageOps;
@@ -13,6 +15,7 @@ import es.um.redes.nanoFiles.application.NanoFiles;
 
 
 import es.um.redes.nanoFiles.tcp.server.NFServer;
+import es.um.redes.nanoFiles.util.FileDigest;
 import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFControllerLogicP2P {
@@ -152,30 +155,133 @@ public class NFControllerLogicP2P {
 	
 	protected boolean downloadFileFromServers(InetSocketAddress[] serverAddressList, String targetFileNameSubstring,
 			String localFileName) {
-		boolean downloaded = false;
+		System.out.println("Entrando en el método downloadFileFromServe");
+		boolean downloaded = false; 
 		
-		// lista de peers vacios, nadie tiene el fichero buscado
-		if (serverAddressList.length == 0) {
-			System.err.println("* Cannot start download - No list of server addresses provided");
-			return false;
-		}
-		
-		// fichero buscado ya existe. Evitamos sobreescribir el archivo
-		File localFile = new File(NanoFiles.sharedDirname + File.separator + localFileName); //ruta al fichero
-		if (localFile.exists()) {
-			System.err.println("File already exists locally: " + localFileName);
-			return false;
-		}
-		
-		int ChunkNumber = 0;  //emepzamos desde el chunk 0 (principio fichero)
-		boolean moreChunks = true;
-		
-		Map<InetSocketAddress, Integer> chunkPorServidor = new HashMap<>();
-		
+		try {
+			// lista de peers vacios, nadie tiene el fichero buscado
+			if (serverAddressList.length == 0) {
+				System.err.println("* Cannot start download - No list of server addresses provided");
+				return false;
+			}
 
-		
-		
-		
+			// fichero buscado ya existe. Evitamos sobreescribir el archivo
+			File localFile = new File(localFileName);
+			if (localFile.exists()) {
+				System.err.println("[P2P] File already exists: " + localFileName);
+				return false;
+			}
+
+			// Conectar al 1º peer y pedir FILE_INFO
+			NFConnector infoConnector = new NFConnector(serverAddressList[0]);
+			PeerMessage info = infoConnector.requestFileInfo(targetFileNameSubstring);
+			
+			//mini debug
+			
+			if (info != null) {
+			    System.out.println("[P2P] FILE_INFO recibido:");
+			    System.out.println(" - Nombre: " + info.getFileName());
+			    System.out.println(" - Tamaño: " + info.getFileSize());
+			    System.out.println(" - Hash: " + info.getFileHash());
+			} else {
+			    System.err.println("[P2P] FILE_INFO no recibido o inválido");
+			}
+			
+			
+			infoConnector.close();
+
+			if (info == null || info.getOpcode() != PeerMessageOps.FILE_INFO_RESPONSE) {
+				System.err.println("[P2P] No se pudo obtener información del archivo del primer servidor");
+				return false;
+			}
+
+			String fileName = info.getFileName();
+			String expectedHash = info.getFileHash();
+			long fileSize = info.getFileSize();
+
+			int numPeers = serverAddressList.length;
+			int chunkSize = (int) Math.ceil((double) fileSize / numPeers);
+
+			System.out.println("[P2P] Iniciando descarga de: " + fileName);
+			System.out.println("[P2P] Tamaño total: " + fileSize + " bytes");
+			System.out.println("[P2P] Hash esperado: " + expectedHash);
+			System.out.println("[P2P] Chunks: " + numPeers + " (chunkSize: " + chunkSize + ")");
+
+			System.out.println("[DEBUG] Guardando fichero en: " + localFile.getAbsolutePath());
+
+			
+			// Preparamos archivo de salida
+			RandomAccessFile raf = new RandomAccessFile(localFile, "rw");
+
+			// Mapa resumen de descargas por peer
+			Map<InetSocketAddress, Integer> resumenChunks = new HashMap<>();
+
+			// pedir chunks
+			for (int i = 0; i < numPeers; i++) {
+				try {
+					InetSocketAddress peer = serverAddressList[i];
+					NFConnector connector = new NFConnector(peer);
+
+					// Crear petición GET_CHUNK
+					PeerMessage request = new PeerMessage(PeerMessageOps.GET_CHUNK);
+					request.setFileName(fileName);
+					request.setChunkNumber(i);
+					request.setChunkSize(chunkSize);
+
+					// Enviar petición
+					request.writeMessageToOutputStream(connector.getDos());
+					connector.getDos().flush();
+
+					// Leer respuesta
+					PeerMessage response = PeerMessage.readMessageFromInputStream(connector.getDis());
+
+					if (response.getOpcode() == PeerMessageOps.SEND_CHUNK) {
+						byte[] chunkData = response.getChunkData();
+						long offset = (long) i * chunkSize;
+
+						raf.seek(offset);
+						raf.write(chunkData);
+
+						System.out.println("[P2P] Chunk #" + i + " recibido desde " + peer);
+						resumenChunks.put(peer, chunkData.length); // Resumen
+					} else {
+						System.err.println("[P2P] Peer " + peer + " devolvió FILE_NOT_FOUND o error");
+					}
+
+					connector.close();
+
+				} catch (IOException e) {
+					System.err.println("[P2P] Error con el peer " + serverAddressList[i] + ": " + e.getMessage());
+				}
+			}
+
+			raf.close();
+
+			// Verificar integridad
+			String downloadedHash = FileDigest.computeFileChecksumString(localFile.getPath());
+
+			if (downloadedHash.equals(expectedHash)) {
+				System.out.println("[P2P] Descarga completada correctamente y verificada");
+				downloaded = true;
+
+				System.out.println("[P2P] Resumen de descarga:");
+				for (Map.Entry<InetSocketAddress, Integer> entry : resumenChunks.entrySet()) {
+					System.out.println(" - " + entry.getKey() + " -> " + entry.getValue() + " bytes");
+				}
+
+			} else {
+				System.err.println("[P2P] ERROR: Hash no coincide. Fichero corrupto o incompleto");
+			}
+
+		} catch (IOException e) {
+			System.err.println("[P2P] Error general durante la descarga: " + e.getMessage());
+		}
+
+		return downloaded;
+	}
+
+
+
 		
 		/*
 		 * TODO: Crear un objeto NFConnector distinto para establecer una conexión TCP
@@ -195,9 +301,13 @@ public class NFControllerLogicP2P {
 
 
 
+	
+	
+	
+	
+	
 
-		return downloaded;
-	}
+
 
 	/**
 	 * Método para obtener el puerto de escucha de nuestro servidor de ficheros

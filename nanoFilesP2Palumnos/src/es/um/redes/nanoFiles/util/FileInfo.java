@@ -29,6 +29,24 @@ public class FileInfo {
 
 	public FileInfo() {
 	}
+	
+	//getters añadidos para mas claridad
+	
+	public String getFileHash() {
+		return fileHash;
+	}
+	
+	public String getFileName() {
+		return fileName;
+	}
+	
+	public String getFilePath() {
+		return filePath;
+	}
+	
+	public long getFileSize() {
+		return fileSize;
+	}
 
 	public String toString() {
 		StringBuffer strBuf = new StringBuffer();

@@ -24,8 +24,13 @@ public class NFConnector {
 	private DataOutputStream dos;
 	private DataInputStream dis;
 	
-
-
+	public DataOutputStream  getDos() {
+		return dos;
+	}
+	
+	public DataInputStream getDis() {
+		return dis;
+	}
 
 	public NFConnector(InetSocketAddress fserverAddr) throws UnknownHostException, IOException {
 		
@@ -57,6 +62,9 @@ public class NFConnector {
 	
 	
 	public PeerMessage requestFileInfo(String fileNameSubstring) throws IOException {
+	    System.out.println("[NFConnector] Enviando FILE_INFO_REQUEST para: " + fileNameSubstring);
+
+		
 		//Crear mensaje para solicitar info
 		PeerMessage request = new PeerMessage(PeerMessageOps.FILE_INFO_REQUEST);
 		request.setFileName(fileNameSubstring);
@@ -65,8 +73,14 @@ public class NFConnector {
 		request.writeMessageToOutputStream(dos);
 		dos.flush();
 		
+		 System.out.println("[NFConnector] Esperando FILE_INFO_RESPONSE...");
+		
 		//Respuesta
 		PeerMessage response = PeerMessage.readMessageFromInputStream(dis);
+		
+
+	    System.out.println("[NFConnector] Respuesta recibida: opcode = " + response.getOpcode());
+
 		
 		//Comprobamos validez de la respuesta
 		if (response.getOpcode() == PeerMessageOps.FILE_INFO_RESPONSE) {
