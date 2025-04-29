@@ -33,7 +33,7 @@ public class DirectoryConnector {
 		// Guardamos el string con el nombre/IP del host
 		directoryHostname = hostname;
 		/*
-		 * TODO: (Boletín SocketsUDP) Convertir el string 'hostname' a InetAddress y
+		 * (Boletín SocketsUDP) Convertir el string 'hostname' a InetAddress y
 		 * guardar la dirección de socket (address:DIRECTORY_PORT) del directorio en el
 		 * atributo directoryAddress, para poder enviar datagramas a dicho destino.
 		 */  //hecho
@@ -41,7 +41,7 @@ public class DirectoryConnector {
 		directoryAddress = new InetSocketAddress(InetAddress.getByName(hostname), DIRECTORY_PORT);
 		
 		/*
-		 * TODO: (Boletín SocketsUDP) Crea el socket UDP en cualquier puerto para enviar datagramas al directorio
+		 *  (Boletín SocketsUDP) Crea el socket UDP en cualquier puerto para enviar datagramas al directorio
 		 */  //hecho
 		this.socket = new DatagramSocket(0);
 
@@ -75,7 +75,7 @@ public class DirectoryConnector {
 			System.exit(-1);
 		}
 		/*
-		 * TODO: (Boletín SocketsUDP) Enviar datos en un datagrama al directorio y
+		 * (Boletín SocketsUDP) Enviar datos en un datagrama al directorio y
 		 * recibir una respuesta. El array devuelto debe contener únicamente los datos
 		 * recibidos, *NO* el búfer de recepción al completo.
 		 */
@@ -101,9 +101,11 @@ public class DirectoryConnector {
 		            System.out.println("Esperando respuesta en puerto" + socket.getLocalPort());
 		            socket.receive(paqueteRespuesta);  // Recibimos la respuesta
 		            
+		            
 		            System.out.println("CLIENTE: Datagrama recibido desde " +
 		                    paqueteRespuesta.getAddress() + ":" + paqueteRespuesta.getPort() +
 		                    " con " + paqueteRespuesta.getLength() + " bytes");
+		            
 		            
 		            // Procesamos la respuesta
 		            response = new byte[paqueteRespuesta.getLength()];
@@ -219,14 +221,12 @@ public class DirectoryConnector {
 		String sPing = dmPing.toString();
 		byte[] bPing = sPing.getBytes();
 		
-		System.out.println("Enviando mensaje");
+		System.out.println("Enviando mensaje...");
 		System.out.println("Mensaje enviado:\n" + sPing);
 		
-		//envaimos
-		sendAndReceiveDatagrams(bPing);
-		
-		//Recibimos y procesamos respuesta
+		//envaimos y recibimos respuesta
 		byte[] bRespuesta = sendAndReceiveDatagrams(bPing);
+		
 		String sRespuesta = new String(bRespuesta);
 		DirMessage dmRespuesta = DirMessage.fromString(sRespuesta);
 		
@@ -282,10 +282,10 @@ public class DirectoryConnector {
 
 		
 		if (dmRespuesta.getOperation().equals(DirMessageOps.OPERATION_SERVEOK)) {
-			System.out.println("Servidor registrado correctamente");
+			System.out.println("Ficheros de nf-shared compartidos exitosamente");
 			success = true;
 		} else {
-			System.err.println("Error al registrar el servidor. Respuesta recibida: " + dmRespuesta.getOperation());
+			System.err.println("Error al compartir los ficheros de nf-shared. Carpeta vacía. Respuesta recibida: " + dmRespuesta.getOperation());
 		}
 		
 		return success;
@@ -331,7 +331,7 @@ public class DirectoryConnector {
 			List<FileInfo> files = response.getFileList();
 			filelist = files.toArray(new FileInfo[0]);
 		} else {
-			System.err.println("Error al obtener la lista de ficheros. Respuesta: " + response.getOperation());
+			System.err.println("Error al obtener la lista de ficheros, no hay ficheros publicados. Respuesta: " + response.getOperation());
 		}
 
 

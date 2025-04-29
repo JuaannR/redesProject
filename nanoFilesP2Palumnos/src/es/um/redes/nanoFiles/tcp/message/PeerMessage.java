@@ -11,7 +11,7 @@ public class PeerMessage {
 	private byte opcode;	
 	
 	// get_chunk y send_chunk
-	private String fileName;  
+	private String fileName;  //file _info response
 	private int chunkNumber;
 	
 	//solo get_chunk

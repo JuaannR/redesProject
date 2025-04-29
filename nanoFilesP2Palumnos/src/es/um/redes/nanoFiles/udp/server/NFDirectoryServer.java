@@ -27,7 +27,7 @@ public class NFDirectoryServer {
 	 */
 	private DatagramSocket socket = null;
 	/*
-	 * TODO: Añadir aquí como atributos las estructuras de datos que sean necesarias
+	 *Añadir aquí como atributos las estructuras de datos que sean necesarias
 	 * para mantener en el directorio cualquier información necesaria para la
 	 * funcionalidad del sistema nanoFilesP2P: ficheros publicados, servidores
 	 * registrados, etc.
@@ -63,7 +63,7 @@ public class NFDirectoryServer {
 		 */
 		messageDiscardProbability = corruptionProbability;
 		/*
-		 * TODO: (Boletín SocketsUDP) Inicializar el atributo socket: Crear un socket
+		 * (Boletín SocketsUDP) Inicializar el atributo socket: Crear un socket
 		 * UDP ligado al puerto especificado por el argumento directoryPort en la
 		 * máquina local,
 		 */
@@ -71,7 +71,7 @@ public class NFDirectoryServer {
 		socket = new DatagramSocket(DIRECTORY_PORT);
 		
 		/*
-		 * TODO: (Boletín SocketsUDP) Inicializar atributos que mantienen el estado del
+		 * (Boletín SocketsUDP) Inicializar atributos que mantienen el estado del
 		 * servidor de directorio: ficheros, etc.)
 		 */
 
@@ -92,13 +92,13 @@ public class NFDirectoryServer {
 		boolean datagramReceived = false;
 		while (!datagramReceived) {
 			/*
-			 * TODO: (Boletín SocketsUDP) Crear un búfer para recibir datagramas y un
+			 * (Boletín SocketsUDP) Crear un búfer para recibir datagramas y un
 			 * datagrama asociado al búfer (datagramReceivedFromClient)
 			 */
 
 			
 			/*
-			 * TODO: (Boletín SocketsUDP) Recibimos a través del socket un datagrama
+			 * (Boletín SocketsUDP) Recibimos a través del socket un datagrama
 			 */
 			
 			byte[] buffer = new byte[DirMessage.PACKET_MAX_SIZE];
@@ -140,7 +140,7 @@ public class NFDirectoryServer {
 
 	private void sendResponseTestMode(DatagramPacket pkt) throws IOException {
 		/*
-		 * TODO: (Boletín SocketsUDP) Construir un String partir de los datos recibidos
+		 * (Boletín SocketsUDP) Construir un String partir de los datos recibidos
 		 * en el datagrama pkt. A continuación, imprimir por pantalla dicha cadena a
 		 * modo de depuración.
 		 */
@@ -172,14 +172,14 @@ public class NFDirectoryServer {
 		
 		
 		/*
-		 * TODO: (Boletín SocketsUDP) Después, usar la cadena para comprobar que su
+		 * (Boletín SocketsUDP) Después, usar la cadena para comprobar que su
 		 * valor es "ping"; en ese caso, enviar como respuesta un datagrama con la
 		 * cadena "pingok". Si el mensaje recibido no es "ping", se informa del error y
 		 * se envía "invalid" como respuesta.    HECHO
 		 */
 
 		/*
-		 * TODO: (Boletín Estructura-NanoFiles) Ampliar el código para que, en el caso
+		 * (Boletín Estructura-NanoFiles) Ampliar el código para que, en el caso
 		 * de que la cadena recibida no sea exactamente "ping", comprobar si comienza
 		 * por "ping&" (es del tipo "ping&PROTOCOL_ID", donde PROTOCOL_ID será el
 		 * identificador del protocolo diseñado por el grupo de prácticas (ver
@@ -209,7 +209,7 @@ public class NFDirectoryServer {
 		
 		
 		/*
-		 * TODO: (Boletín MensajesASCII) Construir String partir de los datos recibidos
+		 * (Boletín MensajesASCII) Construir String partir de los datos recibidos
 		 * en el datagrama pkt. A continuación, imprimir por pantalla dicha cadena a
 		 * modo de depuración. Después, usar la cadena para construir un objeto
 		 * DirMessage que contenga en sus atributos los valores del mensaje. A partir de
@@ -226,14 +226,14 @@ public class NFDirectoryServer {
 		
 
 		/*
-		 * TODO: Una vez construido un objeto DirMessage con el contenido del datagrama
+		 * Una vez construido un objeto DirMessage con el contenido del datagrama
 		 * recibido, obtener el tipo de operación solicitada por el mensaje y actuar en
 		 * consecuencia, enviando uno u otro tipo de mensaje en respuesta.
 		 */
 		String operation = dmDatos.getOperation();
 
 		/*
-		 * TODO: (Boletín MensajesASCII) Construir un objeto DirMessage (msgToSend) con
+		 * (Boletín MensajesASCII) Construir un objeto DirMessage (msgToSend) con
 		 * la respuesta a enviar al cliente, en función del tipo de mensaje recibido,
 		 * leyendo/modificando según sea necesario el "estado" guardado en el servidor
 		 * de directorio (atributos files, etc.). Los atributos del objeto DirMessage
@@ -246,16 +246,16 @@ public class NFDirectoryServer {
 		DirMessage dmRespuesta = null;
 
 		/*
-		 * TODO: (Boletín MensajesASCII) Comprobamos si el protocolId del mensaje del
+		 *  (Boletín MensajesASCII) Comprobamos si el protocolId del mensaje del
 		 * cliente coincide con el nuestro.
 		 */
 		/*
-		 * TODO: (Boletín MensajesASCII) Construimos un mensaje de respuesta que indique
+		 * (Boletín MensajesASCII) Construimos un mensaje de respuesta que indique
 		 * el éxito/fracaso del ping (compatible, incompatible), y lo devolvemos como
 		 * resultado del método.
 		 */									// ****** SWTICH*******
  		/*
-		 * TODO: (Boletín MensajesASCII) Imprimimos por pantalla el resultado de
+		 * (Boletín MensajesASCII) Imprimimos por pantalla el resultado de
 		 * procesar la petición recibida (éxito o fracaso) con los datos relevantes, a
 		 * modo de depuración en el servidor
 		 */
@@ -285,8 +285,8 @@ public class NFDirectoryServer {
 			InetSocketAddress peerAddress = new InetSocketAddress(peerIP, peerPort);
 			
 			if (dmDatos.getFileList() == null) {
-			    System.err.println("El mensaje SERVE no contiene lista de ficheros (fileList=null)");
-			    dmRespuesta = new DirMessage(DirMessageOps.OPEARTION_SERVE_ERROR); // si lo tienes, o SERVEOK si quieres forzar
+			    System.err.println("El mensaje SERVE no contiene lista de ficheros");
+			    dmRespuesta = new DirMessage(DirMessageOps.OPEARTION_SERVEERROR); // si lo tienes, o SERVEOK si quieres forzar
 			    break;
 			}
 
@@ -332,6 +332,14 @@ public class NFDirectoryServer {
 			for (ArrayList<FileInfo> peerFiles : serverToFileList.values()) {
 				allFiles.addAll(peerFiles);
 			}
+			
+			
+			if (allFiles.isEmpty()) {
+			    System.err.println("El mensaje FILELIST no contiene lista de ficheros");
+			    dmRespuesta = new DirMessage(DirMessageOps.OPERATION_FILELISTERROR); 
+			    break;
+			}
+			
 			
 			//Mensaje de respuesta con los ficheros
 			DirMessage dmRespuestaFileList = new DirMessage(DirMessageOps.OPERATION_FILELISTOK);
@@ -395,7 +403,7 @@ public class NFDirectoryServer {
 		}
 
 		/*
-		 * TODO: (Boletín MensajesASCII) Convertir a String el objeto DirMessage
+		 * (Boletín MensajesASCII) Convertir a String el objeto DirMessage
 		 * (msgToSend) con el mensaje de respuesta a enviar, extraer los bytes en que se
 		 * codifica el string y finalmente enviarlos en un datagrama
 		 */

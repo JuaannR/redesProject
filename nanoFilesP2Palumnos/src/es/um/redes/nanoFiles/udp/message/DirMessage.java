@@ -140,7 +140,7 @@ public class DirMessage {
 	 */
 	public static DirMessage fromString(String message) {
 		/*
-		 * TODO: (Boletín MensajesASCII) Usar un bucle para parsear el mensaje línea a
+		 * (Boletín MensajesASCII) Usar un bucle para parsear el mensaje línea a
 		 * línea, extrayendo para cada línea el nombre del campo y el valor, usando el
 		 * delimitador DELIMITER, y guardarlo en variables locales.
 		 */

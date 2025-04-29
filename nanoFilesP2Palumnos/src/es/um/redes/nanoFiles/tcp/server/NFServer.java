@@ -18,22 +18,15 @@ import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFServer implements Runnable {
 
-	public static final int PORT = 10000;
+	public static final int PORT = 0;
 
 
 
 	private ServerSocket serverSocket = null;
 
-	///////////////////////////////////////////////////////////////////////
+
 	public NFServer() throws IOException {
-		/*
-		 * TODO: (Boletín SocketsTCP) Crear una direción de socket a partir del puerto
-		 * especificado (PORT)
-		 */
-		/*
-		 * TODO: (Boletín SocketsTCP) Crear un socket servidor y ligarlo a la dirección
-		 * de socket anterior
-		 */
+
 		// crea un server socket y lo liga a un puerto libre del sistema
 		this.serverSocket = new ServerSocket(PORT);
 		System.out.println("[NFServer] Servidor creado y escuchando en puerto " + serverSocket.getLocalPort());
@@ -46,9 +39,15 @@ public class NFServer implements Runnable {
 		}
 		return 0;
 	}
-/////////////////////////////////////////////////////////////////////////////
 	
 
+	public void stop() throws IOException {
+	    if (serverSocket != null && !serverSocket.isClosed()) {
+	        serverSocket.close();  // Esto lanza IOException en el accept(), provocando que el run() termine
+	    }
+	}
+
+	
 	/**
 	 * Método para ejecutar el servidor de ficheros en primer plano. Sólo es capaz
 	 * de atender una conexión de un cliente. Una vez se lanza, ya no es posible
@@ -74,7 +73,7 @@ public class NFServer implements Runnable {
 
 		while (true) {
 			/*
-			 * TODO: (Boletín SocketsTCP) Usar el socket servidor para esperar conexiones de
+			 * (Boletín SocketsTCP) Usar el socket servidor para esperar conexiones de
 			 * otros peers que soliciten descargar ficheros.
 			 */
 			try {

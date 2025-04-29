@@ -20,7 +20,7 @@ import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFControllerLogicP2P {
 	/*
-	 * TODO: Se necesita un atributo NFServer que actuará como servidor de ficheros
+	 * Se necesita un atributo NFServer que actuará como servidor de ficheros
 	 * de este peer
 	 */
 	private NFServer fileServer = null;
@@ -50,7 +50,7 @@ public class NFControllerLogicP2P {
 		} else {
 
 			/*
-			 * TODO: (Boletín Servidor TCP concurrente) Arrancar servidor en segundo plano
+			 * (Boletín Servidor TCP concurrente) Arrancar servidor en segundo plano
 			 * creando un nuevo hilo, comprobar que el servidor está escuchando en un puerto
 			 * válido (>0), imprimir mensaje informando sobre el puerto de escucha, y
 			 * devolver verdadero. Las excepciones que puedan lanzarse deben ser capturadas
@@ -271,6 +271,7 @@ public class NFControllerLogicP2P {
 
 			} else {
 				System.err.println("[P2P] ERROR: Hash no coincide. Fichero corrupto o incompleto");
+				localFile.delete();
 			}
 
 		} catch (IOException e) {
@@ -284,7 +285,7 @@ public class NFControllerLogicP2P {
 
 		
 		/*
-		 * TODO: Crear un objeto NFConnector distinto para establecer una conexión TCP
+		 * Crear un objeto NFConnector distinto para establecer una conexión TCP
 		 * con cada servidor de ficheros proporcionado, y usar dicho objeto para
 		 * descargar trozos (chunks) del fichero. Se debe comprobar previamente si ya
 		 * existe un fichero con el mismo nombre (localFileName) en esta máquina, en
@@ -329,13 +330,19 @@ public class NFControllerLogicP2P {
 	 * Método para detener nuestro servidor de ficheros en segundo plano
 	 * 
 	 */
+	
 	protected void stopFileServer() {
-		/*
-		 * TODO: Enviar señal para detener nuestro servidor de ficheros en segundo plano
-		 */
-
-
-
+	    if (fileServer != null) {
+	        try {
+	            fileServer.stop();  // <-- ahora te explico cómo hacer el stop() en NFServer
+	            fileServer = null;
+	            System.out.println("[P2P] Servidor de ficheros detenido correctamente.");
+	        } catch (IOException e) {
+	            System.err.println("[P2P] Error al detener el servidor: " + e.getMessage());
+	        }
+	    } else {
+	        System.err.println("[P2P] No hay servidor de ficheros en ejecución.");
+	    }
 	}
 
 	protected boolean serving() {
